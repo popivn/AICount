@@ -1,103 +1,29 @@
-# Virtualenv
-/.venv/
-/venv/
-
-# Byte-compiled / optimized / DLL files
+# Python & Virtualenv
 __pycache__/
-.ipynb_checkpoints/
 *.py[cod]
-
-# C extensions
+*$py.class
 *.so
-
-# json file
-*.json
-
-# log file
-*.log
-
-# Distribution / packaging
-/bin/
-*build/
-/develop-eggs/
-*dist/
-/eggs/
-/lib/
-/lib64/
-/output/
-/output_*/
-output_*
-/inference_model/
-/output_inference/
-/static/uploads/*
-!/static/uploads/.gitkeep
-/server/static/uploads/*
-!/server/static/uploads/.gitkeep
-/classroom_ai_deploy/static/uploads/*
-!/classroom_ai_deploy/static/uploads/.gitkeep
-
-/parts/
-/sdist/
-/var/
-*.egg-info/
-/.installed.cfg
-/*.egg
-/.eggs
-
-# AUTHORS and ChangeLog will be generated while packaging
-/AUTHORS
-/ChangeLog
-
-# BCloud / BuildSubmitter
-/build_submitter.*
-/logger_client_log
-
-# Installer logs
+.venv/
+venv/
+env/
 pip-log.txt
-pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-.tox/
-.coverage
-.cache
-.pytest_cache
-nosetests.xml
-coverage.xml
-
-# Translations
-*.mo
-
-# Sphinx documentation
-/docs/_build/
-
-*.tar
-*.pyc
-
-.idea/
-
-dataset/coco/annotations
-dataset/coco/train2017
-dataset/coco/val2017
-dataset/voc/VOCdevkit
-dataset/fruit/fruit-detection/
-dataset/voc/test.txt
-dataset/voc/trainval.txt
-dataset/wider_face/WIDER_test
-dataset/wider_face/WIDER_train
-dataset/wider_face/WIDER_val
-dataset/wider_face/wider_face_split
-dataset/mot/*
-dataset/mot/**
-
-log/*
-
-ppdet/version.py
-
-# NPU meta folder
-kernel_meta/
-
-# MAC
-# Client Frontend
+# Node & Frontend
+node_modules/
 client/node_modules/
 client/dist/
-node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Server Uploads & Temporary files
+server/static/uploads/*
+!server/static/uploads/.gitkeep
+*.log
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.DS_Store
+Thumbs.db
