@@ -31,10 +31,10 @@ output_*
 /output_inference/
 /static/uploads/*
 !/static/uploads/.gitkeep
+/server/static/uploads/*
+!/server/static/uploads/.gitkeep
 /classroom_ai_deploy/static/uploads/*
 !/classroom_ai_deploy/static/uploads/.gitkeep
-2550_*.png
-orig_*.png
 
 /parts/
 /sdist/
@@ -97,5 +97,7 @@ ppdet/version.py
 kernel_meta/
 
 # MAC
-*.DS_Store
-
+# Client Frontend
+client/node_modules/
+client/dist/
+node_modules/
