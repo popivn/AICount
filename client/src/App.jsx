@@ -11,6 +11,7 @@ export default function App() {
     total: 0,
     pose: 0,
     head: 0,
+    recovered: 0,
     far: 0,
     elapsedMs: null,
   })
@@ -21,7 +22,7 @@ export default function App() {
   })
 
   const [students, setStudents] = useState([])
-  const [filterType, setFilterType] = useState('all') // 'all' | 'pose' | 'head' | 'far'
+  const [filterType, setFilterType] = useState('all') // 'all' | 'pose' | 'head' | 'recovered' | 'far'
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 12
@@ -63,6 +64,7 @@ export default function App() {
         total: data.total_students,
         pose: data.pose_students,
         head: data.head_students || 0,
+        recovered: data.recovered_students || 0,
         far: data.far_head_students,
         elapsedMs: data.elapsed_ms,
       })
@@ -125,6 +127,8 @@ export default function App() {
         matchType = s.type === 'fused_pose_head' || s.type === 'pose_only'
       } else if (filterType === 'head') {
         matchType = s.type === 'head_only'
+      } else if (filterType === 'recovered') {
+        matchType = s.type === 'recovered_head'
       } else if (filterType === 'far') {
         matchType = s.type === 'far_crowd_head'
       }
@@ -169,6 +173,13 @@ export default function App() {
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
             Khung xương (Pose Only)
+          </span>
+        )
+      case 'recovered_head':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-fuchsia-500/15 text-fuchsia-400 border border-fuchsia-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse"></span>
+            Góc Khuất / Màn Hình (Cascade)
           </span>
         )
       default:
@@ -352,6 +363,21 @@ export default function App() {
               </div>
             </div>
 
+            {/* Metric Cascade Deep-Recovery */}
+            {metrics.recovered > 0 && (
+              <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-fuchsia-500/40 transition-all border border-fuchsia-500/25 bg-fuchsia-950/15">
+                <div className="w-11 h-11 rounded-lg bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center shrink-0 shadow-lg shadow-fuchsia-500/15">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-2xl font-extrabold text-fuchsia-300 leading-none">{metrics.recovered}</div>
+                  <div className="text-xs text-fuchsia-400/90 mt-1">Cứu Hộ Góc Khuất (Cascade)</div>
+                </div>
+              </div>
+            )}
+
             {/* Metric Far (Chi hien khi co P2PNet) */}
             {metrics.far > 0 && (
               <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-white/20 transition-all">
@@ -533,6 +559,18 @@ export default function App() {
                 >
                   Head ({metrics.head})
                 </button>
+                {metrics.recovered > 0 && (
+                  <button
+                    onClick={() => { setFilterType('recovered'); setCurrentPage(1) }}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                      filterType === 'recovered'
+                        ? 'bg-fuchsia-500 text-white font-bold shadow-sm shadow-fuchsia-500/30'
+                        : 'text-fuchsia-400 hover:text-white'
+                    }`}
+                  >
+                    Góc Khuất ({metrics.recovered})
+                  </button>
+                )}
                 {metrics.far > 0 && (
                   <button
                     onClick={() => { setFilterType('far'); setCurrentPage(1) }}

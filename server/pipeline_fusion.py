@@ -107,26 +107,42 @@ class UltimateClassroomPipeline:
 
         pose_candidates = []
         for box, kpt in zip(pose_res.boxes, pose_res.keypoints):
-            xyxy = box.xyxy[0].cpu().numpy()
+            xyxy = [float(x) for x in box.xyxy[0]]
             conf = float(box.conf[0])
             kpts = kpt.xy[0].cpu().numpy()
             kconf = kpt.conf[0].cpu().numpy() if kpt.conf is not None else [1.0] * 17
 
-            # Tinh tam dau: Uu tien mui (0), mat (1, 2) hoac vai (5, 6)
-            head_x = (xyxy[0] + xyxy[2]) / 2.0
-            head_y = xyxy[1] + (xyxy[3] - xyxy[1]) * 0.18
-            valid_face_kpts = [kpts[idx] for idx in range(5) if kconf[idx] > 0.18]
-            if len(valid_face_kpts) > 0:
-                head_x = float(np.mean([pt[0] for pt in valid_face_kpts]))
-                head_y = float(np.mean([pt[1] for pt in valid_face_kpts]))
-            elif kconf[5] > 0.18 and kconf[6] > 0.18:
-                head_x = float((kpts[5][0] + kpts[6][0]) / 2.0)
-                head_y = float(min(kpts[5][1], kpts[6][1]) - 12)
+            has_sh = (kconf[5] > 0.35 and kconf[6] > 0.35)
+            mid_sh_x = float((kpts[5][0] + kpts[6][0]) / 2.0)
+            mid_sh_y = float((kpts[5][1] + kpts[6][1]) / 2.0)
+            sh_w = abs(kpts[5][0] - kpts[6][0])
+
+            valid_face = [kpts[i] for i in range(5) if kconf[i] > 0.35]
+            face_aligned = True
+            if len(valid_face) > 0 and has_sh:
+                mean_face_x = float(np.mean([pt[0] for pt in valid_face]))
+                if abs(mean_face_x - mid_sh_x) > max(6.0, sh_w * 0.18):
+                    # Điểm mặt thuộc về người ngồi phía sau hoặc kế bên!
+                    face_aligned = False
+
+            if len(valid_face) > 0 and face_aligned:
+                head_x = float(np.mean([pt[0] for pt in valid_face]))
+                head_y = float(np.mean([pt[1] for pt in valid_face]))
+            elif has_sh:
+                head_x = mid_sh_x
+                head_y = float(min(kpts[5][1], kpts[6][1]) - max(10.0, sh_w * 0.40))
+            else:
+                head_x = (xyxy[0] + xyxy[2]) / 2.0
+                head_y = xyxy[1] + (xyxy[3] - xyxy[1]) * 0.18
 
             pose_candidates.append({
-                'box': [float(xyxy[0]), float(xyxy[1]), float(xyxy[2]), float(xyxy[3])],
+                'box': xyxy,
                 'head_pt': np.array([head_x, head_y]),
                 'conf': conf,
+                'has_sh': has_sh,
+                'mid_sh_x': mid_sh_x if has_sh else None,
+                'sh_w': sh_w if has_sh else None,
+                'sh_y': min(kpts[5][1], kpts[6][1]) if has_sh else None,
                 'matched': False
             })
 
@@ -147,14 +163,14 @@ class UltimateClassroomPipeline:
 
         head_candidates = []
         for box in head_res.boxes:
-            xyxy = box.xyxy[0].cpu().numpy()
+            xyxy = [float(x) for x in box.xyxy[0]]
             conf = float(box.conf[0])
             cx = (xyxy[0] + xyxy[2]) / 2.0
             cy = (xyxy[1] + xyxy[3]) / 2.0
             bw = xyxy[2] - xyxy[0]
             bh = xyxy[3] - xyxy[1]
             head_candidates.append({
-                'box': [float(xyxy[0]), float(xyxy[1]), float(xyxy[2]), float(xyxy[3])],
+                'box': xyxy,
                 'head_pt': np.array([cx, cy]),
                 'size': max(bw, bh),
                 'conf': conf,
@@ -162,7 +178,40 @@ class UltimateClassroomPipeline:
             })
 
         # ----------------------------------------------------
-        # BƯỚC 3: CHẠY P2PNET (CROWD DENSITY MAP CHO HÀNG XA - TUỲ CHỌN)
+        # BƯỚC 3: QUÉT NỐI TIẾP ĐA TẦNG (CASCADE DEEP-RECOVERY PASS)
+        # Chạy model Head ở độ nhạy cao (conf=0.08) để bắt các sinh viên bị màn hình máy tính / góc khuất che lấp
+        # Cơ chế khử trùng lặp không gian (Spatial Deduplication) nghiêm ngặt để TUYỆT ĐỐI KHÔNG ĐẾM TRÙNG!
+        # ----------------------------------------------------
+        recovery_candidates = []
+        recovery_conf = 0.08
+        if head_conf > recovery_conf:
+            with torch.inference_mode():
+                rec_res = self.head_model.predict(
+                    source=image_path,
+                    conf=recovery_conf,
+                    iou=0.45,
+                    imgsz=1280,
+                    device=str(self.device),
+                    verbose=False
+                )[0]
+            for box in rec_res.boxes:
+                c = float(box.conf[0])
+                if c >= head_conf:
+                    continue  # Đã bắt ở Bước 2
+                xyxy = [float(x) for x in box.xyxy[0]]
+                cx = (xyxy[0] + xyxy[2]) / 2.0
+                cy = (xyxy[1] + xyxy[3]) / 2.0
+                bw = xyxy[2] - xyxy[0]
+                bh = xyxy[3] - xyxy[1]
+                recovery_candidates.append({
+                    'box': xyxy,
+                    'head_pt': np.array([cx, cy]),
+                    'size': max(bw, bh),
+                    'conf': c
+                })
+
+        # ----------------------------------------------------
+        # BƯỚC 4: CHẠY P2PNET (CROWD DENSITY MAP CHO HÀNG XA - TUỲ CHỌN)
         # ----------------------------------------------------
         p2p_points = []
         if self.use_p2pnet:
@@ -193,11 +242,11 @@ class UltimateClassroomPipeline:
             gc.collect()
 
         # ----------------------------------------------------
-        # BƯỚC 4: TRI-MODEL FUSION ENGINE (HỢP NHẤT KHÔNG TRIỆT TIÊU SAI)
+        # BƯỚC 5: MULTI-STAGE FUSION & KHỬ TRÙNG LẶP TOÀN CỤC (SPATIAL DEDUPLICATION)
         # ----------------------------------------------------
         final_list = []
 
-        # A. Hợp nhất YOLO-Head với YOLO-Pose
+        # A. Hợp nhất YOLO-Head với YOLO-Pose (Tầng 1)
         for h in head_candidates:
             hx, hy = h['head_pt']
             h_size = h['size']
@@ -205,6 +254,8 @@ class UltimateClassroomPipeline:
             matched_pose = None
             min_dist = 999999.0
             for p in pose_candidates:
+                if p['matched']:
+                    continue
                 dist = np.linalg.norm(h['head_pt'] - p['head_pt'])
                 px1, py1, px2, py2 = p['box']
                 upper_y = py1 + (py2 - py1) * 0.40
@@ -224,7 +275,6 @@ class UltimateClassroomPipeline:
                     'conf': max(h['conf'], matched_pose['conf'])
                 })
             else:
-                # Sinh viên bị bàn ghế che khuất thân thể (như bạn 2 & 3 kề bên!)
                 final_list.append({
                     'type': 'head_only',
                     'head_pt': h['head_pt'],
@@ -237,7 +287,10 @@ class UltimateClassroomPipeline:
             if not p['matched']:
                 is_near = False
                 for s in final_list:
-                    if np.linalg.norm(p['head_pt'] - s['head_pt']) < 18.0:
+                    dist = np.linalg.norm(p['head_pt'] - s['head_pt'])
+                    sx1, sy1, sx2, sy2 = s['box']
+                    head_rad = max(sx2 - sx1, sy2 - sy1) * 0.75
+                    if dist < max(22.0, head_rad) or (sx1 - 4 <= p['head_pt'][0] <= sx2 + 4 and sy1 - 4 <= p['head_pt'][1] <= sy2 + 4):
                         is_near = True
                         break
                 if not is_near:
@@ -248,7 +301,31 @@ class UltimateClassroomPipeline:
                         'conf': p['conf']
                     })
 
-        # C. Bổ sung các điểm đầu hàng xa từ P2PNet (Nếu được kích hoạt)
+        # C. Quét cứu trợ Cascade Deep-Recovery (Tầng 2) - KHỬ TRÙNG LẶP NGHIÊM NGẶT
+        for cand in recovery_candidates:
+            cand_pt = cand['head_pt']
+            cand_cx, cand_cy = cand_pt
+            cand_box = cand['box']
+
+            is_duplicate = False
+            for s in final_list:
+                s_pt = s['head_pt']
+                dist = np.linalg.norm(cand_pt - s_pt)
+                sx1, sy1, sx2, sy2 = s['box']
+                head_rad = max(sx2 - sx1, sy2 - sy1) * 0.70
+                if dist < max(22.0, head_rad) or (sx1 - 4 <= cand_cx <= sx2 + 4 and sy1 - 4 <= cand_cy <= sy2 + 4):
+                    is_duplicate = True
+                    break
+
+            if not is_duplicate:
+                final_list.append({
+                    'type': 'recovered_head',
+                    'head_pt': cand['head_pt'],
+                    'box': cand['box'],
+                    'conf': cand['conf']
+                })
+
+        # D. Bổ sung các điểm đầu hàng xa từ P2PNet (Nếu được kích hoạt)
         if self.use_p2pnet:
             p2p_points.sort(key=lambda x: x['score'], reverse=True)
             for pt_item in p2p_points:
@@ -278,15 +355,35 @@ class UltimateClassroomPipeline:
                         'conf': pt_item['score']
                     })
 
+        # ----------------------------------------------------
+        # BƯỚC E: BẢO HIỂM KHỬ TRÙNG LẶP TOÀN CỤC (GLOBAL SPATIAL DEDUPLICATION)
+        # Bất kỳ 2 điểm nào có khoảng cách < 22px đều được coi là cùng 1 người -> giữ điểm có confidence cao nhất!
+        # Tuyệt đối triệt tiêu hoàn toàn hiện tượng 2 chấm (xanh lá và xanh nước biển) nằm đè lên nhau.
+        # ----------------------------------------------------
+        final_list.sort(key=lambda s: s['conf'], reverse=True)
+        deduped_list = []
+        for s in final_list:
+            s_pt = s['head_pt']
+            is_dup = False
+            for kept in deduped_list:
+                dist = np.linalg.norm(s_pt - kept['head_pt'])
+                if dist < 22.0:
+                    is_dup = True
+                    break
+            if not is_dup:
+                deduped_list.append(s)
+        final_list = deduped_list
+
         # Sắp xếp từ trên xuống dưới theo vị trí Y
         final_list.sort(key=lambda s: s['head_pt'][1])
 
         # ----------------------------------------------------
-        # BƯỚC 5: VẼ ẢNH TRỰC QUAN ĐẸP MẮT
+        # BƯỚC 6: VẼ ẢNH TRỰC QUAN ĐẸP MẮT
         # ----------------------------------------------------
         total_count = len(final_list)
         pose_count = len([s for s in final_list if s['type'] in ('fused_pose_head', 'pose_only')])
         head_count = len([s for s in final_list if s['type'] == 'head_only'])
+        recovered_count = len([s for s in final_list if s['type'] == 'recovered_head'])
         far_count = len([s for s in final_list if s['type'] == 'far_crowd_head'])
 
         if output_path:
@@ -303,6 +400,11 @@ class UltimateClassroomPipeline:
                     # Chuyên bắt đầu bị che thân (Xanh Cyan / Sky Blue)
                     cv2.circle(out_img, (hx, hy), 7, (255, 200, 0), 1, cv2.LINE_AA)
                     cv2.circle(out_img, (hx, hy), 4, (255, 120, 0), -1, cv2.LINE_AA)
+                    cv2.circle(out_img, (hx, hy), 2, (255, 255, 255), -1, cv2.LINE_AA)
+                elif s['type'] == 'recovered_head':
+                    # Cứu trợ quét tầng 2: Sinh viên góc khuất / che bởi màn hình máy tính (Tím Hồng Neon)
+                    cv2.circle(out_img, (hx, hy), 8, (255, 0, 255), 2, cv2.LINE_AA)
+                    cv2.circle(out_img, (hx, hy), 4, (0, 255, 255), -1, cv2.LINE_AA)
                     cv2.circle(out_img, (hx, hy), 2, (255, 255, 255), -1, cv2.LINE_AA)
                 elif s['type'] == 'pose_only':
                     # Pose đơn lẻ
@@ -321,15 +423,17 @@ class UltimateClassroomPipeline:
 
             # Dashboard thống kê tinh gọn góc trái
             overlay = out_img.copy()
-            cv2.rectangle(overlay, (15, 15), (510, 130), (20, 20, 20), -1)
+            cv2.rectangle(overlay, (15, 15), (550, 150), (20, 20, 20), -1)
             cv2.addWeighted(overlay, 0.75, out_img, 0.25, 0, out_img)
 
-            title_text = "DUAL-MODEL AI CLASSROOM (POSE + HEAD)" if not self.use_p2pnet else "TRI-MODEL AI CLASSROOM FUSION"
+            title_text = "AI CLASSROOM MONITORING (CASCADE MULTI-PASS)"
             cv2.putText(out_img, title_text, (25, 38), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2, cv2.LINE_AA)
             cv2.putText(out_img, f"TONG SO SINH VIEN: {total_count}", (25, 66), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2, cv2.LINE_AA)
             cv2.putText(out_img, f"* Toan than / Tu the (Pose): {pose_count}", (25, 86), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (0, 255, 128), 1, cv2.LINE_AA)
-            cv2.putText(out_img, f"* Dau nguoi / Che than (Head AI): {head_count}", (25, 104), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (255, 200, 0), 1, cv2.LINE_AA)
-            if self.use_p2pnet:
+            cv2.putText(out_img, f"* Dau nguoi ro rang (Head AI): {head_count}", (25, 104), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (255, 200, 0), 1, cv2.LINE_AA)
+            if recovered_count > 0:
+                cv2.putText(out_img, f"* Quet goc khuat man hinh (Cascade): {recovered_count}", (25, 122), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (255, 0, 255), 1, cv2.LINE_AA)
+            elif self.use_p2pnet:
                 cv2.putText(out_img, f"* Hang xa cung cuoi lop (P2PNet): {far_count}", (25, 122), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (0, 160, 255), 1, cv2.LINE_AA)
 
             os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
@@ -340,6 +444,7 @@ class UltimateClassroomPipeline:
             'total_students': total_count,
             'pose_students': pose_count,
             'head_students': head_count,
+            'recovered_students': recovered_count,
             'far_head_students': far_count,
             'students': final_list
         }

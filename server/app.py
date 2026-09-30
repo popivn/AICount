@@ -101,6 +101,7 @@ def handle_predict():
             'total_students': res['total_students'],
             'pose_students': res['pose_students'],
             'head_students': res.get('head_students', 0),
+            'recovered_students': res.get('recovered_students', 0),
             'far_head_students': res['far_head_students'],
             'students': students_data,
             'original_url': f'/static/uploads/{orig_filename}',
