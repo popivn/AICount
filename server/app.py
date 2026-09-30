@@ -21,7 +21,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 print("=" * 60)
 print("  DANG KHOI DONG SERVER AI CLASSROOM MONITORING (PORT 3838)")
 print("=" * 60)
-pipeline = UltimateClassroomPipeline(use_gpu=False)
+pipeline = UltimateClassroomPipeline(use_gpu=False, use_p2pnet=False)
 print("[+] Server da san sang phuc vu!")
 
 

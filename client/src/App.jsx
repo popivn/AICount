@@ -352,18 +352,20 @@ export default function App() {
               </div>
             </div>
 
-            {/* Metric Far */}
-            <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-white/20 transition-all">
-              <div className="w-11 h-11 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
+            {/* Metric Far (Chi hien khi co P2PNet) */}
+            {metrics.far > 0 && (
+              <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-white/20 transition-all">
+                <div className="w-11 h-11 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-2xl font-extrabold text-white leading-none">{metrics.far}</div>
+                  <div className="text-xs text-slate-400 mt-1">Hàng Ghế Xa Cùng</div>
+                </div>
               </div>
-              <div>
-                <div className="text-2xl font-extrabold text-white leading-none">{metrics.far}</div>
-                <div className="text-xs text-slate-400 mt-1">Hàng Ghế Xa Cùng</div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Viewer Card */}
@@ -531,16 +533,18 @@ export default function App() {
                 >
                   Head ({metrics.head})
                 </button>
-                <button
-                  onClick={() => { setFilterType('far'); setCurrentPage(1) }}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                    filterType === 'far'
-                      ? 'bg-cyan-500 text-slate-950 font-bold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  P2PNet ({metrics.far})
-                </button>
+                {metrics.far > 0 && (
+                  <button
+                    onClick={() => { setFilterType('far'); setCurrentPage(1) }}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                      filterType === 'far'
+                        ? 'bg-cyan-500 text-slate-950 font-bold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    P2PNet ({metrics.far})
+                  </button>
+                )}
               </div>
             </div>
           </div>
