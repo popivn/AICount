@@ -12,6 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as _np
+if not hasattr(_np, 'sctypes'):
+    _np.sctypes = {
+        'int': [_np.int8, _np.int16, _np.int32, _np.int64],
+        'uint': [_np.uint8, _np.uint16, _np.uint32, _np.uint64],
+        'float': [_np.float16, _np.float32, _np.float64],
+        'complex': [_np.complex64, _np.complex128],
+        'others': [bool, object, bytes, str, _np.void]
+    }
+
 from . import (core, data, engine, modeling, model_zoo, optimizer, metrics,
                utils, slim)
 

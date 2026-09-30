@@ -1249,7 +1249,8 @@ class Trainer(object):
 
                 start = 0
                 for i, im_id in enumerate(outs['im_id']):
-                    image_path = imid2path[int(im_id)]
+                    _id_val = int(np.asarray(im_id).reshape(-1)[0])
+                    image_path = imid2path[_id_val]
                     image = Image.open(image_path).convert('RGB')
                     image = ImageOps.exif_transpose(image)
                     self.status['original_image'] = np.array(image.copy())
@@ -1267,7 +1268,7 @@ class Trainer(object):
                             if 'pose3d' in batch_res else None
                     image = visualize_results(
                         image, bbox_res, mask_res, segm_res, keypoint_res,
-                        pose3d_res, int(im_id), catid2name, draw_threshold)
+                        pose3d_res, _id_val, catid2name, draw_threshold)
                     self.status['result_image'] = np.array(image.copy())
                     if self._compose_callback:
                         self._compose_callback.on_step_end(self.status)

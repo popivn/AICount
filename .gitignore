@@ -25,8 +25,17 @@ __pycache__/
 /lib/
 /lib64/
 /output/
+/output_*/
+output_*
 /inference_model/
 /output_inference/
+/static/uploads/*
+!/static/uploads/.gitkeep
+/classroom_ai_deploy/static/uploads/*
+!/classroom_ai_deploy/static/uploads/.gitkeep
+2550_*.png
+orig_*.png
+
 /parts/
 /sdist/
 /var/
