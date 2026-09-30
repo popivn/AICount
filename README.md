@@ -41,8 +41,7 @@ Chạy 1 lệnh duy nhất để tự động build và chạy cả Client & Ser
 docker compose up --build -d
 ```
 
-* **Giao diện Web:** `http://<SERVER_IP>:3000`
-* **API Backend AI:** `http://<SERVER_IP>:3838`
+* **Giao diện Web & API:** `http://<SERVER_IP>:3838`
 
 ### Các lệnh quản trị:
 * Xem log: `docker compose logs -f`
@@ -52,17 +51,13 @@ docker compose up --build -d
 
 ## 2. Chạy Local (Không dùng Docker)
 
-### Chạy Server AI:
+Chỉ cần **nhấp đúp chuột vào 1 file duy nhất** ở thư mục gốc:
 ```bash
-cd server
-run_server.bat
-# hoặc: python app.py
+run_all.bat
 ```
+File này sẽ tự động:
+1. Mở cửa sổ khởi chạy Backend AI Server (Port 3838).
+2. Mở cửa sổ khởi chạy Frontend React Client (`npm run dev` - Port 3000).
+3. Tự động mở trình duyệt web tại `http://localhost:3000`.
 
-### Chạy Client React:
-```bash
-cd client
-run_client.bat
-# hoặc: npm install && npm run dev
-```
-Truy cập: `http://localhost:3000`
+*(Hoặc bạn có thể chạy riêng từng phần qua `server/run_server.bat` và `client/run_client.bat`)*

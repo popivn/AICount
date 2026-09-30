@@ -6,10 +6,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install minimal OS libraries required by PyTorch and image processing
+# Install system libraries required by OpenCV (libGL), PyTorch and image processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgomp1 \
+    libgl1 \
     libglib2.0-0 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies

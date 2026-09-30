@@ -6,8 +6,8 @@ services:
       dockerfile: Dockerfile
     container_name: ai_classroom_server
     restart: unless-stopped
-    ports:
-      - "3838:3838"
+    expose:
+      - "3838"
     volumes:
       - server_uploads:/app/static/uploads
     environment:
@@ -21,7 +21,7 @@ services:
     container_name: ai_classroom_client
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3838:80"
     depends_on:
       - server
 

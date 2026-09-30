@@ -85,12 +85,24 @@ def handle_predict():
         res = pipeline.predict(orig_path, output_path=result_path, conf_thresh=conf_thresh)
         elapsed_ms = int((time.time() - t_start) * 1000)
 
+        # Chuan hoa danh sach sinh vien va diem tin cay
+        students_data = []
+        for idx, s in enumerate(res.get('students', []), 1):
+            students_data.append({
+                'id': idx,
+                'type': s.get('type', 'fused_pose_head'),
+                'conf': round(float(s.get('conf', 0.0)), 4),
+                'x': int(s.get('head_pt', [0, 0])[0]),
+                'y': int(s.get('head_pt', [0, 0])[1])
+            })
+
         return jsonify({
             'success': True,
             'total_students': res['total_students'],
             'pose_students': res['pose_students'],
             'head_students': res.get('head_students', 0),
             'far_head_students': res['far_head_students'],
+            'students': students_data,
             'original_url': f'/static/uploads/{orig_filename}',
             'result_url': f'/static/uploads/{result_filename}',
             'elapsed_ms': elapsed_ms
