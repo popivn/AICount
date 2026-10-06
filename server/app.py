@@ -35,7 +35,21 @@ def add_cors_headers(response):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    template_path = os.path.join(BASE_DIR, 'templates', 'index.html')
+    if os.path.exists(template_path):
+        return render_template('index.html')
+    return jsonify({
+        'status': 'online',
+        'service': 'AI Classroom Monitoring Backend',
+        'port': 3838,
+        'cron_default_conf': 0.36,
+        'endpoints': {
+            'predict': '/predict (POST)',
+            'cron_scan': '/api/cron/scan (GET/POST)',
+            'cron_process': '/api/cron/process?conf_thresh=0.36 (GET/POST)',
+            'cron_run': '/api/cron/run?conf_thresh=0.36 (GET/POST)'
+        }
+    })
 
 
 @app.route('/predict', methods=['POST'])
@@ -111,6 +125,87 @@ def handle_predict():
     except Exception as e:
         import traceback
         traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+from scripts.cron_scan_data import scan_and_enqueue_images
+from scripts.process_queue import process_queue_items
+
+
+# ==============================================================================
+# CÁC API ENDPOINT DÀNH CHO CRON JOB (HTTP GET / POST)
+# ==============================================================================
+
+@app.route('/api/cron/scan', methods=['GET', 'POST'])
+def handle_cron_scan():
+    """
+    Endpoint 1: Quét thư mục data/ và đẩy ảnh mới vào data_queue.
+    URL: http://localhost:3838/api/cron/scan
+    """
+    try:
+        total_found, new_enqueued, already_exists = scan_and_enqueue_images(verbose=True)
+        return jsonify({
+            'success': True,
+            'action': 'scan',
+            'total_found': total_found,
+            'new_enqueued': new_enqueued,
+            'already_exists': already_exists,
+            'message': f"Quét thành công! Tìm thấy {total_found} ảnh, thêm mới {new_enqueued} vào hàng đợi."
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/cron/process', methods=['GET', 'POST'])
+def handle_cron_process():
+    """
+    Endpoint 2: Xử lý các ảnh đang chờ trong data_queue bằng AI.
+    URL: http://localhost:3838/api/cron/process?limit=10&conf_thresh=0.36
+    """
+    try:
+        limit = request.args.get('limit', default=None, type=int)
+        conf_thresh = request.args.get('conf_thresh', default=0.36, type=float)
+        # Sử dụng lại pipeline đã warm-up sẵn trong RAM giúp xử lý cực nhanh
+        processed_count = process_queue_items(pipeline=pipeline, max_items=limit, conf_thresh=conf_thresh, verbose=True)
+        return jsonify({
+            'success': True,
+            'action': 'process',
+            'conf_thresh': conf_thresh,
+            'processed_count': processed_count,
+            'message': f"Đã xử lý thành công {processed_count} ảnh trong hàng đợi (Độ tin cậy: {conf_thresh})."
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/cron/run', methods=['GET', 'POST'])
+def handle_cron_run_all():
+    """
+    Endpoint 3: Chạy toàn trình Cron (Quét thư mục data -> Đẩy vào queue -> AI xử lý -> Lưu CSDL).
+    URL: http://localhost:3838/api/cron/run?conf_thresh=0.36
+    """
+    try:
+        # Bước 1: Quét ảnh
+        total_found, new_enqueued, already_exists = scan_and_enqueue_images(verbose=True)
+
+        # Bước 2: Xử lý hàng đợi
+        limit = request.args.get('limit', default=None, type=int)
+        conf_thresh = request.args.get('conf_thresh', default=0.36, type=float)
+        processed_count = process_queue_items(pipeline=pipeline, max_items=limit, conf_thresh=conf_thresh, verbose=True)
+
+        return jsonify({
+            'success': True,
+            'action': 'scan_and_process',
+            'conf_thresh': conf_thresh,
+            'scan': {
+                'total_found': total_found,
+                'new_enqueued': new_enqueued,
+                'already_exists': already_exists
+            },
+            'processed_count': processed_count,
+            'message': f"Hoàn tất toàn trình Cron: Quét được {total_found} ảnh (+{new_enqueued} mới), AI đã xử lý {processed_count} ảnh (Độ tin cậy: {conf_thresh})."
+        }), 200
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
