@@ -31,7 +31,7 @@ from scripts.cron_scan_data import scan_and_enqueue_images
 from scripts.process_queue import process_queue_items
 
 
-def run_cron_cycle(scan_only=False, process_only=False, pipeline=None, conf_thresh=0.36, verbose=True):
+def run_cron_cycle(scan_only=False, process_only=False, pipeline=None, conf_thresh=0.44, verbose=True):
     if not process_only:
         scan_and_enqueue_images(verbose=verbose)
 
@@ -43,8 +43,8 @@ def main():
     parser = argparse.ArgumentParser(description="Cron Worker cho AI Attendance Pipeline")
     parser.add_argument('--scan-only', action='store_true', help="Chỉ quét thư mục data và nạp ảnh vào queue")
     parser.add_argument('--process-only', action='store_true', help="Chỉ xử lý các ảnh đang chờ trong queue")
-    parser.add_argument('--conf', '--conf-thresh', dest='conf_thresh', type=float, default=0.36, 
-                        help="Độ tin cậy nhận diện AI (mặc định: 0.36)")
+    parser.add_argument('--conf', '--conf-thresh', dest='conf_thresh', type=float, default=0.44, 
+                        help="Độ tin cậy nhận diện AI (mặc định: 0.44)")
     parser.add_argument('--loop', action='store_true', help="Chạy vòng lặp liên tục thay vì thoát sau 1 lần chạy")
     parser.add_argument('--interval', type=int, default=15, help="Khoảng thời gian nghỉ giữa các lần lặp (giây, mặc định 15)")
     args = parser.parse_args()

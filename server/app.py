@@ -59,7 +59,7 @@ def handle_predict():
     # Kiem tra xem nguoi dung upload file hay chon mau co san
     uploaded_file = request.files.get('image')
     sample_name = request.form.get('sample_name')
-    conf_thresh = float(request.form.get('conf_thresh', 0.22))
+    conf_thresh = float(request.form.get('conf_thresh', 0.44))
 
     if uploaded_file and uploaded_file.filename != '':
         ext = os.path.splitext(uploaded_file.filename)[1].lower()
@@ -164,7 +164,7 @@ def handle_cron_process():
     """
     try:
         limit = request.args.get('limit', default=None, type=int)
-        conf_thresh = request.args.get('conf_thresh', default=0.36, type=float)
+        conf_thresh = request.args.get('conf_thresh', default=0.44, type=float)
         # Sử dụng lại pipeline đã warm-up sẵn trong RAM giúp xử lý cực nhanh
         processed_count = process_queue_items(pipeline=pipeline, max_items=limit, conf_thresh=conf_thresh, verbose=True)
         return jsonify({
@@ -182,7 +182,7 @@ def handle_cron_process():
 def handle_cron_run_all():
     """
     Endpoint 3: Chạy toàn trình Cron (Quét thư mục data -> Đẩy vào queue -> AI xử lý -> Lưu CSDL).
-    URL: http://localhost:3838/api/cron/run?conf_thresh=0.36
+    URL: http://localhost:3838/api/cron/run?conf_thresh=0.44
     """
     try:
         # Bước 1: Quét ảnh
@@ -190,7 +190,7 @@ def handle_cron_run_all():
 
         # Bước 2: Xử lý hàng đợi
         limit = request.args.get('limit', default=None, type=int)
-        conf_thresh = request.args.get('conf_thresh', default=0.36, type=float)
+        conf_thresh = request.args.get('conf_thresh', default=0.44, type=float)
         processed_count = process_queue_items(pipeline=pipeline, max_items=limit, conf_thresh=conf_thresh, verbose=True)
 
         return jsonify({

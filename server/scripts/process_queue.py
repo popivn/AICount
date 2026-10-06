@@ -35,7 +35,7 @@ DATA_DIR = os.path.join(SERVER_DIR, 'data')
 PROCESSED_DIR = os.path.join(SERVER_DIR, 'data_processed')
 
 # Độ tin cậy mặc định cho AI nhận diện khi chạy Cron
-DEFAULT_CONF_THRESH = 0.36
+DEFAULT_CONF_THRESH = 0.44
 
 
 def extract_room_code(image_name: str) -> str:

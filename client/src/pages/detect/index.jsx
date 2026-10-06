@@ -1,7 +1,8 @@
 import React, { useState, useRef, useMemo } from 'react'
+import MainLayout from '../../layouts/MainLayout.jsx'
 
 export default function DetectPage({ onNavigate }) {
-  const [confThresh, setConfThresh] = useState(0.22)
+  const [confThresh, setConfThresh] = useState(0.44)
   const [activeTab, setActiveTab] = useState('result') // 'result' | 'original'
   const [isLoading, setIsLoading] = useState(false)
   const [selectedSample, setSelectedSample] = useState(null)
@@ -193,58 +194,36 @@ export default function DetectPage({ onNavigate }) {
   }
 
   return (
-    <div className="w-full min-h-screen px-4 md:px-8 py-6 max-w-full">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b border-white/10 mb-8 gap-4">
-        <div className="flex items-center gap-4">
-          {onNavigate && (
-            <button
-              onClick={() => onNavigate('/')}
-              className="p-2.5 rounded-xl bg-slate-900 border border-white/10 hover:border-cyan-400 text-slate-300 hover:text-white transition-all shadow-md"
-              title="Quay lại Trang Chủ"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </button>
-          )}
-
-          <img 
-            src="/logo.png" 
-            alt="VTTU Logo" 
-            className="w-12 h-12 rounded-xl object-contain bg-white/5 p-0.5 border border-white/10 shadow-lg shadow-cyan-500/20 shrink-0"
-          />
+    <MainLayout onNavigate={onNavigate}>
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Title & Status Sub-header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b border-slate-800/80 mb-8 gap-4">
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-              AI Classroom Monitoring
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-400">
-              Hệ thống Điểm Danh & Định Vị Sinh Viên Lớp Học (YOLOv8-Pose + P2PNet)
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-2">
+              <i className="fa-solid fa-microchip text-xs"></i>
+              <span>Tri-Model AI Inference Module</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Module Trực Quan Hóa AI Nhận Diện
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Kiểm thử và đánh giá trực tiếp mô hình nhận diện đa tầng (YOLOv8-Pose + Head + P2PNet) trên ảnh camera giảng đường.
             </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {onNavigate && (
-            <button
-              onClick={() => onNavigate('/')}
-              className="px-3.5 py-1.5 rounded-lg bg-slate-900 border border-white/10 hover:border-slate-700 text-xs font-medium text-slate-300 hover:text-white transition-all"
-            >
-              Trang Chủ
-            </button>
-          )}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shadow-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>AI Engine Ready</span>
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shadow-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>AI Engine Ready</span>
+            </div>
           </div>
         </div>
-      </header>
 
-      {/* Main Grid */}
-      <main className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Main Grid */}
+        <main className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Controls & Upload */}
         <section className="lg:col-span-4 xl:col-span-3">
           <div className="glass-panel rounded-2xl p-5 shadow-2xl">
@@ -336,84 +315,6 @@ export default function DetectPage({ onNavigate }) {
 
         {/* Right Column: Results & Viewer */}
         <section className="lg:col-span-8 xl:col-span-9 space-y-6">
-          {/* Counters Row */}
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3.5">
-            {/* Metric Total */}
-            <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-white/20 transition-all">
-              <div className="w-11 h-11 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-2xl font-extrabold text-white leading-none">{metrics.total}</div>
-                <div className="text-xs text-slate-400 mt-1">Tổng Sinh Viên Có Mặt</div>
-                {metrics.elapsedMs && (
-                  <span className="inline-block mt-1 text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">
-                    {metrics.elapsedMs} ms
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Metric Pose */}
-            <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-white/20 transition-all">
-              <div className="w-11 h-11 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-2xl font-extrabold text-white leading-none">{metrics.pose}</div>
-                <div className="text-xs text-slate-400 mt-1">Toàn Thân / Khung Xương</div>
-              </div>
-            </div>
-
-            {/* Metric Head */}
-            <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-white/20 transition-all">
-              <div className="w-11 h-11 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <circle cx="12" cy="10" r="4" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18c0-2.2 2.7-4 6-4s6 1.8 6 4" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-2xl font-extrabold text-white leading-none">{metrics.head}</div>
-                <div className="text-xs text-slate-400 mt-1">Che Thân / Ngồi Sát</div>
-              </div>
-            </div>
-
-            {/* Metric Cascade Deep-Recovery */}
-            {metrics.recovered > 0 && (
-              <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-fuchsia-500/40 transition-all border border-fuchsia-500/25 bg-fuchsia-950/15">
-                <div className="w-11 h-11 rounded-lg bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center shrink-0 shadow-lg shadow-fuchsia-500/15">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-2xl font-extrabold text-fuchsia-300 leading-none">{metrics.recovered}</div>
-                  <div className="text-xs text-fuchsia-400/90 mt-1">Cứu Hộ Góc Khuất (Cascade)</div>
-                </div>
-              </div>
-            )}
-
-            {/* Metric Far (Chi hien khi co P2PNet) */}
-            {metrics.far > 0 && (
-              <div className="glass-panel rounded-xl p-4 flex items-center gap-3.5 hover:border-white/20 transition-all">
-                <div className="w-11 h-11 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-2xl font-extrabold text-white leading-none">{metrics.far}</div>
-                  <div className="text-xs text-slate-400 mt-1">Hàng Ghế Xa Cùng</div>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Viewer Card */}
           <div className="glass-panel rounded-2xl p-5 shadow-2xl flex flex-col min-h-[540px]">
             <div className="flex flex-wrap justify-between items-center mb-4 gap-3">
@@ -726,5 +627,9 @@ export default function DetectPage({ onNavigate }) {
         </section>
       )}
     </div>
+  </MainLayout>
   )
 }
+
+
+
